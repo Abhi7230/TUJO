@@ -26,7 +26,9 @@ def get_recommendation():
     
     # Detect mood using your existing function
     mood = detect_mood(entry_text)
-    print(f"Detected mood: {mood}")  # Debug print
+    
+    # Make sure mood is lowercase for consistent matching
+    mood = mood.lower()
     
     # Define fallback recommendations if file isn't found
     fallback_recommendations = {
@@ -44,53 +46,29 @@ def get_recommendation():
         # Try to load the CSV file with absolute path
         import os
         file_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "recommendations.csv")
-        print(f"Looking for CSV at: {file_path}")  # Debug print
         
-        if not os.path.exists(file_path):
-            print("CSV file not found!")  # Debug print
-            raise FileNotFoundError("recommendations.csv not found")
+        if os.path.exists(file_path):
+            recommendations_df = pd.read_csv(file_path)
             
-        recommendations_df = pd.read_csv(file_path)
-        print(f"CSV loaded, columns: {recommendations_df.columns.tolist()}")  # Debug print
-        print(f"Available moods in CSV: {recommendations_df['Detected Mood'].unique()}")  # Debug print
-        
-        # Convert mood to lowercase for case-insensitive matching
-        mood_lower = mood.lower()
-        
-        # Filter recommendations by detected mood (case-insensitive)
-        mood_recommendations = recommendations_df[recommendations_df["Detected Mood"].str.lower() == mood_lower]
-        
-        print(f"Matching recommendations found: {len(mood_recommendations)}")  # Debug print
-        
-        if not mood_recommendations.empty:
-            # Randomly select one recommendation
-            recommendation = random.choice(mood_recommendations["Suggested Activity"].tolist())
-            print(f"Selected recommendation: {recommendation}")  # Debug print
-        else:
-            # Use fallback if mood not found in dataset
-            if mood_lower in {k.lower(): v for k, v in fallback_recommendations.items()}:
-                # Find the correct case key
-                for k in fallback_recommendations:
-                    if k.lower() == mood_lower:
-                        recommendation = random.choice(fallback_recommendations[k])
-                        break
+            # Convert column and mood to lowercase for case-insensitive matching
+            recommendations_df["Detected Mood"] = recommendations_df["Detected Mood"].str.lower()
+            
+            # Filter recommendations by detected mood
+            mood_recommendations = recommendations_df[recommendations_df["Detected Mood"] == mood]
+            
+            if not mood_recommendations.empty:
+                # Randomly select one recommendation
+                recommendation = random.choice(mood_recommendations["Suggested Activity"].tolist())
             else:
-                recommendation = "Take some time for yourself today."
-            print(f"Using fallback recommendation: {recommendation}")  # Debug print
-        
+                # Use fallback if mood not found in dataset
+                recommendation = random.choice(fallback_recommendations.get(mood, ["Take some time for yourself today."]))
+        else:
+            # File doesn't exist, use fallback
+            recommendation = random.choice(fallback_recommendations.get(mood, ["Take some time for yourself today."]))
     except Exception as e:
         print(f"Error fetching recommendation: {e}")
         # Use fallback recommendations if file can't be loaded
-        mood_lower = mood.lower()
-        if mood_lower in {k.lower(): v for k, v in fallback_recommendations.items()}:
-            # Find the correct case key
-            for k in fallback_recommendations:
-                if k.lower() == mood_lower:
-                    recommendation = random.choice(fallback_recommendations[k])
-                    break
-        else:
-            recommendation = "Take some time for yourself today."
-        print(f"Using fallback after exception: {recommendation}")  # Debug print
+        recommendation = random.choice(fallback_recommendations.get(mood, ["Take some time for yourself today."]))
     
     return jsonify({"mood": mood, "recommendation": recommendation})
 

@@ -280,5 +280,103 @@
       }
     };
   </script>
+  <!-- Add this to your HTML template (diaryentry1.html) -->
+<div id="recommendationModal" class="recommendation-modal" style="display: none;">
+  <div class="recommendation-content">
+      <p id="recommendationText"></p>
+      <button id="closeModal" class="close-button">Close</button>
+  </div>
+</div>
+
+<style>
+.recommendation-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.recommendation-content {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 10px;
+  max-width: 80%;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.close-button {
+  margin-top: 15px;
+  padding: 8px 16px;
+  background-color: #8B5A2B;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.close-button:hover {
+  background-color: #6B4423;
+}
+
+#recommendationText {
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+}
+</style>
+
+<script>
+// Add this JavaScript to handle the recommendation
+document.addEventListener('DOMContentLoaded', function() {
+  const getRecommendationBtn = document.querySelector('button[id="getRecommendation"]') || 
+                               document.querySelector('button:contains("Get Recommendation")') ||
+                               document.querySelector('button:contains("Get recommendation")') ||
+                               document.querySelector('button:contains("Get reccomendation")');
+  
+  if (getRecommendationBtn) {
+      getRecommendationBtn.addEventListener('click', function() {
+          const entryText = document.querySelector('textarea').value;
+          if (!entryText) {
+              alert('Please write an entry first!');
+              return;
+          }
+          
+          fetch('/get_recommendation', {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ entry: entryText }),
+          })
+          .then(response => response.json())
+          .then(data => {
+              // Show custom modal instead of alert
+              const modal = document.getElementById('recommendationModal');
+              const recommendationText = document.getElementById('recommendationText');
+              recommendationText.textContent = `It's okay to feel ${data.mood}. ${data.recommendation}`;
+              modal.style.display = 'flex';
+          })
+          .catch(error => {
+              console.error('Error:', error);
+              alert('Error getting recommendation');
+          });
+      });
+  }
+  
+  // Close modal when the close button is clicked
+  document.getElementById('closeModal').addEventListener('click', function() {
+      document.getElementById('recommendationModal').style.display = 'none';
+  });
+});
+</script>
 </body>
 </html>
